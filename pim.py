@@ -17,8 +17,8 @@ class PIMArray():
         PIM for dot-product computation using 8T SRAM array
     """
 
-    def __init__(self, args):
-        for key, value in vars(args).items():
+    def __init__(self, kwargs):
+        for key, value in kwargs.items():
             setattr(self, key, value)
         self.rng = random.Random()
         os.makedirs(self.run_dir, exist_ok=True)
@@ -219,11 +219,22 @@ def parse_args():
     parser.add_argument('--use_opamp', type=bool, default=False, help='use opamp')
     parser.add_argument('--volt_pos', type=float, default=0.10, help='supply voltage for pos')
 
-    return parser.parse_args()
+    # extra arguments from json
+    parser.add_argument('--extra_args', type=str, default=None, help='extra arguments from json')
+
+    args = parser.parse_args()
+    kwargs = vars(args)
+
+    if os.path.exists(args.extra_args):
+        with open(args.extra_args, 'r') as f:
+            extra_args = json.load(f)
+        kwargs.update(extra_args)
+
+    return kwargs
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    pim = PIMArray(args)
+    kwargs = parse_args()
+    pim = PIMArray(kwargs)
     pim.run_hspice()
     print(pim.parse_lis_file())
