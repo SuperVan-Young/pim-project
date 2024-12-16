@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import random
 import subprocess
+import json
 from argparse import ArgumentParser
 from itertools import product
 
@@ -20,6 +21,9 @@ class PIMArray():
         for key, value in vars(args).items():
             setattr(self, key, value)
         self.rng = random.Random()
+        os.makedirs(self.run_dir, exist_ok=True)
+        self.sp_file = os.path.join(self.run_dir, 'pim.sp')
+        self.lis_file = os.path.join(self.run_dir, 'pim.lis')
     
     def get_circuit_code(self) -> str:
         """
@@ -107,39 +111,80 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         codes += self.get_circuit_code()
         
         readout = ' '.join(f'I(Rf_{c})' for c in range(self.num_col))
-        codes += f"""
+
+        if self.debug:
+            # We sweep Vin_0 for calibration purpose
+            codes += f"""
 * Simulation
-.DC Vin_0 0 {self.volt_vdd} 0.01
+.DC Vin_0 {self.vi_min} {self.vi_max} 0.01
 .PRINT {readout}
-.PROBE {readout}
-"""  # We use Vin_0 for calibration purpose
+"""
+        else:
+            codes += f"""
+* Simulation
+.DC VDD {self.volt_vdd} {self.volt_vdd} 0.01
+.PRINT {readout}
+"""
         
         codes += "\n.END\n"
         return codes
 
-    def run_hspice(self) -> str:
+    def run_hspice(self) -> None:
         """
             Run HSPICE simulation and return the .lis file
         """
-        os.makedirs(self.run_dir, exist_ok=True)
-        sp_file = os.path.join(self.run_dir, 'pim.sp')
-        lis_file = os.path.join(self.run_dir, 'pim.lis')
 
-        with open(sp_file, 'w') as f:
+        with open(self.sp_file, 'w') as f:
             f.write(self.get_sp_code())
-
-        subprocess.run(f'hspice -i {sp_file} -o {lis_file}', shell=True)
-
-        return
+        subprocess.run(f'hspice -i {self.sp_file} -o {self.lis_file}', shell=True)
         
 
-    def parse_lis_file(self) -> pd.DataFrame:
+    def parse_lis_file(self) -> np.array:
         """
             Parse the .lis file and return the result
+            Return: np.array, shape=(mc_iter, num_col)
+        """
+
+        def parse_unit(s) -> float:
+            """
+                handle the unit of the readout current
+            """
+            if 'p' in s:
+                return float(s.replace('p', '')) * 1e-12
+            elif 'n' in s:
+                return float(s.replace('n', '')) * 1e-9
+            elif 'u' in s:
+                return float(s.replace('u', '')) * 1e-6
+            elif 'm' in s:
+                return float(s.replace('m', '')) * 1e-3
+            else:
+                return float(s)
+
+        results = []
+
+        with open(self.lis_file, 'r') as f:
+            line = ''
+            while True:
+                line = f.readline()
+                if line.strip() == 'x': break
+            for _ in range(3): f.readline()
+
+            line = ''
+            while True:
+                line = f.readline()
+                if line.strip() == 'y': break
+                cur_result = line.split()
+                cur_result = [parse_unit(s) for s in cur_result][1:]
+                results.append(np.array(cur_result))
+            
+        return np.stack(results, axis=0)
+
+    
+    def calc_error_rate(self) -> float:
+        """
+            Calculate the average error rate
         """
         pass
-
-
 
 
 def parse_args():
@@ -148,6 +193,8 @@ def parse_args():
     # run configs
     parser.add_argument('--run_dir', type=str, default='./run_test', help='run directory')
     parser.add_argument('--mc_iter', type=int, default=0, help='monte-carlo iteration')
+    parser.add_argument('--debug', action='store_true', default=False, help='debug mode')
+    parser.add_argument('--irbl_unit', type=float, default=1, help='readout current unit for linear interpolation')
 
     # tech file (you should specify random parameters accordingly, e.g. vth)
     parser.add_argument('--tech_file', type=str, default=TECH_FILE, help='technology file')
@@ -179,3 +226,4 @@ if __name__ == '__main__':
     args = parse_args()
     pim = PIMArray(args)
     pim.run_hspice()
+    print(pim.parse_lis_file())

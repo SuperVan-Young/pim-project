@@ -16,8 +16,8 @@ example: $(EXAMPLE_LIS)
 
 
 calibrate:
-	python pim.py --run_dir ./run/calibrate_config_a --cell_type A
-	python pim.py --run_dir ./run/calibrate_config_b --cell_type B
+	python pim.py --run_dir ./run/calibrate_config_a --cell_type A --debug
+	python pim.py --run_dir ./run/calibrate_config_b --cell_type B --debug
 
 clean:
 	rm -f $(EXAMPLE_LIS)
