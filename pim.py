@@ -204,7 +204,7 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         w = (vw_arr - 0) / (self.volt_vdd - 0)
         y = np.dot(w, x)
         y_hat = irbl_vec / self.irbl_unit
-        mape = np.mean(np.abs(y_hat - y) / y)
+        mape = np.mean(np.abs(y_hat - y) / (y + 1e-18))
         return mape
 
 
