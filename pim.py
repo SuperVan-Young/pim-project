@@ -109,10 +109,10 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         readout = ' '.join(f'I(Rf_{c})' for c in range(self.num_col))
         codes += f"""
 * Simulation
-.DC VDD {self.volt_vdd} {self.volt_vdd} 0.01
+.DC Vin_0 0 {self.volt_vdd} 0.01
 .PRINT {readout}
 .PROBE {readout}
-"""
+"""  # We use Vin_0 for calibration purpose
         
         codes += "\n.END\n"
         return codes
@@ -146,7 +146,7 @@ def parse_args():
     parser = ArgumentParser()
 
     # run configs
-    parser.add_argument('--run_dir', type=str, default='./run', help='run directory')
+    parser.add_argument('--run_dir', type=str, default='./run_test', help='run directory')
     parser.add_argument('--mc_iter', type=int, default=0, help='monte-carlo iteration')
 
     # tech file (you should specify random parameters accordingly, e.g. vth)
