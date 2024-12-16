@@ -176,16 +176,22 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
             line = ''
             while True:
                 line = f.readline()
-                if line.strip() == 'x': break
-            for _ in range(3): f.readline()
+                if line.strip() == 'x':
+                    for _ in range(3): f.readline()
 
-            line = ''
-            while True:
-                line = f.readline()
-                if line.strip() == 'y': break
-                cur_result = line.split()
-                cur_result = [parse_unit(s) for s in cur_result][1:]
-                irbl_vec[idx:idx+4] = np.array(cur_result)
+                    line = ''
+                    while True:
+                        line = f.readline()
+                        if line.strip() == 'y': break
+                        cur_result = line.split()
+                        cur_result = [parse_unit(s) for s in cur_result][1:]
+                        irbl_vec[idx:idx+4] = np.array(cur_result)
+                        idx = idx + 4
+                if line == '':
+                    break
+
+        # debug
+        # print(irbl_vec)
             
         return irbl_vec
 
