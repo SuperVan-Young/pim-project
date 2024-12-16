@@ -24,6 +24,28 @@ class PIMArray():
         os.makedirs(self.run_dir, exist_ok=True)
         self.sp_file = os.path.join(self.run_dir, 'pim.sp')
         self.lis_file = os.path.join(self.run_dir, 'pim.lis')
+
+    def get_vi_vec(self) -> np.array:
+        """
+            Generate input voltage vector
+        """
+        if self.vi_dist == 'uniform':
+            return np.random.uniform(self.vi_min, self.vi_max, self.num_col)
+        elif self.vi_dist == 'worst':
+            return np.full(self.num_col, self.vi_max)
+        else:
+            raise NotImplementedError
+        
+    def get_vw_arr(self) -> np.array:
+        """
+            Generate weight voltage array
+        """
+        if self.vw_dist == 'uniform':
+            return np.random.choice([0, self.volt_vdd], size=(self.num_row, self.num_col))
+        elif self.vw_dist == 'worst':
+            return np.full((self.num_row, self.num_col), self.volt_vdd)
+        else:
+            raise NotImplementedError
     
     def get_circuit_code(self) -> str:
         """
@@ -51,7 +73,7 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
 
         return codes
 
-    def get_voltage_code(self) -> str:
+    def get_voltage_code(self, vi_vec, vw_arr) -> str:
         """
             Connect voltage to wires
         """
@@ -60,23 +82,13 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
 .PARAM Vbias={self.volt_bias}
 """
 
+        # initialize voltage value
         for c in range(self.num_col):
-            if self.vi_dist == 'uniform':
-                codes += f".PARAM Vin_{c}=UNIF({(self.vi_max+self.vi_min)/2}, {(self.vi_max-self.vi_min)/2})\n"
-            elif self.vi_dist == 'worst':
-                codes += f".PARAM Vin_{c}={self.vi_max}\n"
-            else:
-                raise NotImplementedError
-            
+            codes += f".PARAM Vin_{c}={vi_vec[c]}\n"
         for r, c in product(range(self.num_row), range(self.num_col)):
-            if self.vw_dist == 'uniform':
-                vq = self.volt_vdd if self.rng.random() > 0.5 else 0
-                codes += f".PARAM VQ_{r}_{c}={vq}\n"  # TODO: use hspice random integer
-            elif self.vw_dist == 'worst':
-                codes += f".PARAM VQ_{r}_{c}=VDD\n"
-            else:
-                raise NotImplementedError
+            codes += f".PARAM VQ_{r}_{c}={vw_arr[r, c]}\n"
 
+        # connect voltage source to nodes
         if self.cell_type == 'A':
             for r in range(self.num_row):
                 codes += f"VWL_{r} WL_{r} 0 DC VDD\n"
@@ -94,7 +106,7 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         
         return codes
 
-    def get_sp_code(self) -> str:
+    def get_sp_code(self, vi_vec, vw_arr) -> str:
         """
             Generate SPICE code for the SRAM array
         """
@@ -107,7 +119,7 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
 .unprotect
 .options post=2 list
 """
-        codes += self.get_voltage_code()
+        codes += self.get_voltage_code(vi_vec, vw_arr)
         codes += self.get_circuit_code()
         
         readout = ' '.join(f'I(Rf_{c})' for c in range(self.num_col))
@@ -133,9 +145,6 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         """
             Run HSPICE simulation and return the .lis file
         """
-
-        with open(self.sp_file, 'w') as f:
-            f.write(self.get_sp_code())
         subprocess.run(f'hspice -i {self.sp_file} -o {self.lis_file}', shell=True)
         
 
@@ -160,7 +169,8 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
             else:
                 return float(s)
 
-        results = []
+        irbl_vec = np.zeros(self.num_col)
+        idx = 0  # we read 4 current at a time
 
         with open(self.lis_file, 'r') as f:
             line = ''
@@ -175,16 +185,40 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
                 if line.strip() == 'y': break
                 cur_result = line.split()
                 cur_result = [parse_unit(s) for s in cur_result][1:]
-                results.append(np.array(cur_result))
+                irbl_vec[idx:idx+4] = np.array(cur_result)
             
-        return np.stack(results, axis=0)
+        return irbl_vec
 
     
-    def calc_error_rate(self) -> float:
+    def calc_error_rate(self, vi_vec, vw_arr, irbl_vec) -> float:
         """
             Calculate the average error rate
         """
-        pass
+        x = (vi_vec - self.vi_min) / (self.vi_max - self.vi_min)
+        w = (vw_arr - 0) / (self.volt_vdd - 0)
+        y = np.dot(w, x)
+        y_hat = irbl_vec / self.irbl_unit
+        mape = np.mean(np.abs(y_hat - y) / y)
+        return mape
+
+
+    def run(self) -> None:
+        """
+            Run the PIM array simulation
+        """
+        vi_vec = self.get_vi_vec()
+        vw_arr = self.get_vw_arr()
+
+        sp_code = self.get_sp_code(vi_vec, vw_arr)
+        with open(self.sp_file, 'w') as f:
+            f.write(sp_code)
+
+        self.run_hspice()
+
+        ibrl_vec = self.parse_lis_file()
+        error_rate = self.calc_error_rate(vi_vec, vw_arr, ibrl_vec)
+
+        print(error_rate)
 
 
 def parse_args():
@@ -236,5 +270,4 @@ def parse_args():
 if __name__ == '__main__':
     kwargs = parse_args()
     pim = PIMArray(kwargs)
-    pim.run_hspice()
-    print(pim.parse_lis_file())
+    pim.run()

@@ -8,7 +8,10 @@ EXAMPLE_SW0 = $(EXAMPLE_SP:.sp=.sw0)
 CONFIG_JSON = $(wildcard config/*.json)
 CONFIG_RPT  = $(CONFIG_JSON:.json=.rpt)
 
-all: example gen_config experiment
+all: 
+	make example
+	make gen_config
+	make experiment
 
 
 %.lis: %.sp
