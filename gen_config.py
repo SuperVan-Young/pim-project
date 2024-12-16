@@ -8,7 +8,7 @@ RUN_ROOT = os.path.join(PROJECT_ROOT, 'run')
 
 SZ_LIST = [4, 8, 16, 32]
 CT_LIST = ['A', 'B']
-DIST_LIST = ['worst']
+DIST_LIST = ['worst', 'uniform']
 
 def gen_base_configs():
     for sz, ct, dist in product(SZ_LIST, CT_LIST, DIST_LIST):

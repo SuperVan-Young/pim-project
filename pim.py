@@ -212,27 +212,33 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         """
             Run the PIM array simulation
         """
-        vi_vec = self.get_vi_vec()
-        vw_arr = self.get_vw_arr()
+        results = []
 
-        sp_code = self.get_sp_code(vi_vec, vw_arr)
-        with open(self.sp_file, 'w') as f:
-            f.write(sp_code)
+        for i in range(self.mc_iter):
+            vi_vec = self.get_vi_vec()
+            vw_arr = self.get_vw_arr()
+            print(vw_arr.shape)
 
-        self.run_hspice()
+            sp_code = self.get_sp_code(vi_vec, vw_arr)
+            with open(self.sp_file, 'w') as f:
+                f.write(sp_code)
 
-        ibrl_vec = self.parse_lis_file()
-        error_rate = self.calc_error_rate(vi_vec, vw_arr, ibrl_vec)
+            self.run_hspice()
 
-        print(error_rate)
+            ibrl_vec = self.parse_lis_file()
+            error_rate = self.calc_error_rate(vi_vec, vw_arr, ibrl_vec)
+            results.append(error_rate)
 
+            print(f"Monte-Carlo iteration {i}: error rate = {error_rate:.4f}")
+
+        print(f"Average error rate = {np.mean(results):.4f}")
 
 def parse_args():
     parser = ArgumentParser()
 
     # run configs
     parser.add_argument('--run_dir', type=str, default='./run_test', help='run directory')
-    parser.add_argument('--mc_iter', type=int, default=0, help='monte-carlo iteration')
+    parser.add_argument('--mc_iter', type=int, default=1, help='monte-carlo iteration')
     parser.add_argument('--debug', action='store_true', default=False, help='debug mode')
     parser.add_argument('--irbl_unit', type=float, default=1, help='readout current unit for linear interpolation')
 
