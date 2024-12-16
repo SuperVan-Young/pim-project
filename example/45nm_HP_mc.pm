@@ -16,7 +16,7 @@
 +lwl     = 0               wwl     = 0               xpart   = 0               toxref  = 1.25e-009     
 +xl	   = -20e-9
 
-+vth0    = 0.46893 LOT/GAUSS 0.09 DEV/GAUSS 0.03        k1      = 0.4             k2      = 0               k3      = 0             
++vth0    = 0.46893 LOT/GAUSS 0.00 DEV/GAUSS 0.03        k1      = 0.4             k2      = 0               k3      = 0             
 +k3b     = 0               w0      = 2.5e-006        dvt0    = 1               dvt1    = 2             
 +dvt2    = 0               dvt0w   = 0               dvt1w   = 0               dvt2w   = 0             
 +dsub    = 0.1             minv    = 0.05            voffl   = 0               dvtp0   = 1e-010        

@@ -217,7 +217,6 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         for i in range(self.mc_iter):
             vi_vec = self.get_vi_vec()
             vw_arr = self.get_vw_arr()
-            print(vw_arr.shape)
 
             sp_code = self.get_sp_code(vi_vec, vw_arr)
             with open(self.sp_file, 'w') as f:
@@ -249,8 +248,8 @@ def parse_args():
     parser.add_argument('--cell_type', type=str, default='A', help='cell type')
     parser.add_argument('--num_row', type=int, default=1, help='number of rows')
     parser.add_argument('--num_col', type=int, default=1, help='number of columns')
-    parser.add_argument('--res_sl', type=float, default=0., help='resistance on SL between cells') # TODO: add resistance on SL
-    parser.add_argument('--res_bl', type=float, default=0., help='resistance on BL between cells') # TODO: add resistance on BL
+    parser.add_argument('--res_sl', type=float, default=0., help='resistance on SL between cells')
+    parser.add_argument('--res_bl', type=float, default=0., help='resistance on BL between cells')
     parser.add_argument('--res_f', type=float, default=50., help='readout resistance')
     parser.add_argument('--volt_vdd', type=float, default=0.65, help='supply voltage for VDD')
     parser.add_argument('--volt_bias', type=float, default=0.65, help='supply voltage for bias')
@@ -261,7 +260,7 @@ def parse_args():
     parser.add_argument('--vi_dist', type=str, default='worst', help='input voltage distribution')
     parser.add_argument('--vw_dist', type=str, default='worst', help='weight voltage distribution')
 
-    # opamp config
+    # opamp config  TODO: finish this part?
     parser.add_argument('--use_opamp', type=bool, default=False, help='use opamp')
     parser.add_argument('--volt_pos', type=float, default=0.10, help='supply voltage for pos')
 
