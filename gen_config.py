@@ -8,7 +8,7 @@ RUN_ROOT = os.path.join(PROJECT_ROOT, 'run')
 
 SZ_LIST = [4, 8, 16, 32]
 CT_LIST = ['A', 'B']
-DIST_LIST = ['worst']
+DIST_LIST = ['worst', 'uniform']
 
 def gen_base_configs():
     for sz, ct, dist in product(SZ_LIST, CT_LIST, DIST_LIST):
@@ -26,6 +26,7 @@ def gen_base_configs():
         config = {
             'run_dir': os.path.join(RUN_ROOT, config_name),
             'extra_args': os.path.join(CONFIG_ROOT, f'{config_name}.json'),
+            'mc_iter': 10 if dist == 'uniform' else 1,
             'num_row': sz,
             'num_col': sz,
             'vi_min': vi_min,
@@ -54,6 +55,7 @@ def gen_res_configs():
         config = {
             'run_dir': os.path.join(RUN_ROOT, config_name),
             'extra_args': os.path.join(CONFIG_ROOT, f'{config_name}.json'),
+            'mc_iter': 10 if dist == 'uniform' else 1,
             'num_row': sz,
             'num_col': sz,
             'vi_min': vi_min,
@@ -85,6 +87,7 @@ def gen_pvt_configs():
             'run_dir': os.path.join(RUN_ROOT, config_name),
             'tech_file': os.path.join(PROJECT_ROOT, 'example/45nm_HP_mc.pm'),
             'extra_args': os.path.join(CONFIG_ROOT, f'{config_name}.json'),
+            'mc_iter': 10 if dist == 'uniform' else 1,
             'num_row': sz,
             'num_col': sz,
             'vi_min': vi_min,

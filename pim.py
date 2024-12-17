@@ -226,7 +226,7 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
 
             ibrl_vec = self.parse_lis_file()
             mape_vec = self.calc_error_rate(vi_vec, vw_arr, ibrl_vec)
-            mape_val = np.mean(mape_vec)
+            mape_val = np.mean(np.clip(mape_vec, None, 10))
             results.append(mape_val)
 
             print(f"Monte-Carlo iteration {i}")
