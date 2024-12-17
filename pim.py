@@ -204,7 +204,7 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
         w = (vw_arr - 0) / (self.volt_vdd - 0)
         y = np.dot(w, x)
         y_hat = irbl_vec / self.irbl_unit
-        mape = np.mean(np.abs(y_hat - y) / (y + 1e-18))
+        mape = np.abs(y_hat - y) / (y + 1e-18)
         return mape
 
 
@@ -225,12 +225,15 @@ Rf_{c} BL_{self.num_row}_{c} 0 {self.res_f}
             self.run_hspice()
 
             ibrl_vec = self.parse_lis_file()
-            error_rate = self.calc_error_rate(vi_vec, vw_arr, ibrl_vec)
-            results.append(error_rate)
+            mape_vec = self.calc_error_rate(vi_vec, vw_arr, ibrl_vec)
+            mape_val = np.mean(mape_vec)
+            results.append(mape_val)
 
-            print(f"Monte-Carlo iteration {i}: error rate = {error_rate:.4f}")
+            print(f"Monte-Carlo iteration {i}")
+            print(f"    mape vec = {mape_vec}")
+            print(f"    mape val = {mape_val:.4f}")
 
-        print(f"Average error rate = {np.mean(results):.4f}")
+        print(f"Average mape val = {np.mean(results):.4f}")
 
 def parse_args():
     parser = ArgumentParser()
